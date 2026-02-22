@@ -44,8 +44,8 @@ app-example
 /ios
 /android
 
-.env.local
-.env
+.env.local*
+.env*
 
 # Added by ggshield
 .cache_ggshield

@@ -8,10 +8,6 @@ export default function Index() {
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    if (__DEV__) {
-      console.log("Index - isLoaded:", isLoaded, "isSignedIn:", isSignedIn);
-    }
-
     // Add small delay to let everything initialize
     const timer = setTimeout(() => {
       setShouldRender(true);
@@ -33,7 +29,7 @@ export default function Index() {
   }
 
   if (__DEV__) {
-    console.log("Index - Redirecting to:", isSignedIn ? "/(tabs)" : "/(auth)");
+    // Redirecting
   }
 
   // Redirect based on auth status

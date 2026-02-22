@@ -14,9 +14,7 @@ const AuthScreen = () => {
   const { loadingStrategy, handleSocialAuth } = useSocialAuth();
   const { isSignedIn, isLoaded } = useAuth();
 
-  useEffect(() => {
-    console.log("Auth Screen - isLoaded:", isLoaded, "isSignedIn:", isSignedIn);
-  }, [isLoaded, isSignedIn]);
+  useEffect(() => {}, [isLoaded, isSignedIn]);
 
   if (!isLoaded) {
     return (
@@ -27,7 +25,7 @@ const AuthScreen = () => {
   }
 
   if (isSignedIn) {
-    console.log("Auth Screen - User signed in, redirecting to tabs");
+    // User authenticated, redirecting
     return <Redirect href="/(tabs)" />;
   }
 

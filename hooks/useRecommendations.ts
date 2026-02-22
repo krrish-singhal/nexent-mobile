@@ -20,10 +20,6 @@ const useRecommendations = () => {
         );
         return data.recommendations;
       } catch (error: any) {
-        console.error(
-          "Failed to fetch recommendations:",
-          error.response?.data || error.message,
-        );
         throw error;
       }
     },
