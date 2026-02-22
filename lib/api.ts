@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
 import axios, { AxiosInstance } from "axios";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 /**
  * ENV VALIDATION (FAIL FAST)
@@ -55,61 +55,66 @@ api.interceptors.response.use(
 );
 
 /**
+ * MODULE-LEVEL INTERCEPTOR TRACKING
+ * Prevents duplicate interceptors when multiple components call useApi()
+ * simultaneously, which would cause every request to fire N times.
+ */
+let authInterceptorId: number | null = null;
+let hookConsumerCount = 0;
+
+/**
  * AUTH-AWARE API HOOK
  */
 export const useApi = (): AxiosInstance => {
   const { getToken, isLoaded } = useAuth();
-  const interceptorId = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isLoaded) {
+    if (!isLoaded) return;
+
+    hookConsumerCount++;
+
+    // Only attach one interceptor regardless of how many components call useApi()
+    if (authInterceptorId === null) {
       if (__DEV__) {
-        console.log("⏳ Clerk not loaded yet, skipping interceptor");
+        console.log("🔐 Attaching auth interceptor");
       }
-      return;
-    }
 
-    if (__DEV__) {
-      console.log("🔐 Attaching auth interceptor");
-    }
+      authInterceptorId = api.interceptors.request.use(
+        async (config) => {
+          try {
+            const token = await getToken();
 
-    if (interceptorId.current !== null) {
-      api.interceptors.request.eject(interceptorId.current);
-    }
+            // Attach token ONLY if user is authenticated
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
 
-    interceptorId.current = api.interceptors.request.use(
-      async (config) => {
-        try {
-          const token = await getToken();
-
-          // Attach token ONLY if user is authenticated
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            if (__DEV__) {
+              console.log(
+                `🌐 REQUEST → ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+              );
+            }
+          } catch (err) {
+            if (__DEV__) {
+              console.error("❌ Token fetch failed", err);
+            }
           }
 
-          if (__DEV__) {
-            console.log(
-              `🌐 REQUEST → ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
-            );
-          }
-        } catch (err) {
-          if (__DEV__) {
-            console.error("❌ Token fetch failed", err);
-          }
-        }
-
-        return config;
-      },
-      (error) => Promise.reject(error),
-    );
+          return config;
+        },
+        (error) => Promise.reject(error),
+      );
+    }
 
     return () => {
-      if (interceptorId.current !== null) {
-        api.interceptors.request.eject(interceptorId.current);
-        interceptorId.current = null;
+      hookConsumerCount--;
+      // Only eject when the last consumer unmounts
+      if (hookConsumerCount === 0 && authInterceptorId !== null) {
+        api.interceptors.request.eject(authInterceptorId);
+        authInterceptorId = null;
       }
     };
-  }, [getToken, isLoaded]);
+  }, [isLoaded]); // getToken is stable; isLoaded is what gates attachment
 
   return api;
 };

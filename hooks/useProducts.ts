@@ -14,7 +14,11 @@ export const useProducts = () => {
         }
         const { data } = await api.get("/products");
         if (__DEV__) {
-          console.log("Products fetched successfully:", data?.length || 0, "items");
+          console.log(
+            "Products fetched successfully:",
+            data?.length || 0,
+            "items",
+          );
         }
         return data;
       } catch (error: any) {
